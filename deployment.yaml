@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: okta-provisioning-agent
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: okta-provisioning-agent
+  template:
+    metadata:
+      labels:
+        app: okta-provisioning-agent
+    spec:
+      containers:
+      - name: okta-provisioning-agent
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: "/mnt/data"
+          name: data
+        - name: config
+          mountPath: "/mnt/secrets"
+          readOnly: true
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: okta-provisioning-agent
+      - name: config
+        secret:
+          secretName: okta-provisioning-agent
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: okta-provisioning-agent
+              topologyKey: kubernetes.io/hostname
+            weight: 100
